@@ -1,0 +1,58 @@
+- name: Install required packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ packages }}"
+
+- name: Install Python dependencies
+  pip:
+    name:
+      - flask
+    executable: pip3
+    extra_args: --user
+- name: Ensure firewalld is running
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: Open port for Flask app
+  firewalld:
+    port: "{{ app_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+
+- name: Create app directory
+  file:
+    path: "/home/ec2-user/{{ app_name }}/templates"
+    state: directory
+    mode: '0755'
+    recurse: yes
+
+- name: Check if database exists
+  stat:
+    path: "/home/ec2-user/{{ app_name }}/notes.db"
+  register: notes_db_exists
+
+
+
+- name: Deploy Flask app
+  template:
+    src: code/app.py.j2
+    dest: "/home/ec2-user/{{ app_name }}/app.py"
+
+
+- name: Deploy HTML template
+  template:
+    src: code/index.html.j2
+    dest: "/home/ec2-user/{{ app_name }}/templates/index.html"
+
+
+
+- name: Run Flask app if not already running
+  shell: |
+    pgrep -f "{{ app_name }}" || nohup {{ python_version }} /home/ec2-user/{{ app_name }}/app.py &
+  args:
+    chdir: "/home/ec2-user/{{ app_name }}"
+

@@ -1,0 +1,8 @@
+app_name: notes_app
+app_port: 5000
+python_version: python3
+packages:
+  - "{{ python_version }}"
+  - "{{ python_version }}-pip"
+  - firewalld
+
